@@ -172,6 +172,7 @@ enum {
 	NODE,
 	UUID,
 	LABEL,
+	PARTUUID
 };
 
 struct libmnt_fs *
@@ -188,6 +189,9 @@ table_search_by_str (struct libmnt_table *tbl, int type, char *str)
 			break;
 		case UUID:
 			fs = mnt_table_find_tag(tbl, "UUID", str, MNT_ITER_FORWARD);
+			break;
+		case PARTUUID:
+			fs = mnt_table_find_tag(tbl, "PARTUUID", str, MNT_ITER_FORWARD);
 			break;
 		case LABEL:
 			fs = mnt_table_find_tag(tbl, "LABEL", str, MNT_ITER_FORWARD);
@@ -211,6 +215,11 @@ table_search_by_dev (struct libmnt_table *tbl, Device *dev)
 
 	// Try to match the uuid
 	fs = table_search_by_str(tbl, UUID, udev_get_prop(dev->dev, "ID_FS_UUID"));
+	if (fs)
+		return fs;
+
+	// Try to match the partuuid
+	fs = table_search_by_str(tbl, PARTUUID, udev_get_prop(dev->dev, "ID_PART_ENTRY_UUID"));
 	if (fs)
 		return fs;
 
@@ -238,6 +247,11 @@ table_search_by_udev (struct libmnt_table *tbl, struct udev_device *udev)
 
 	// Try to match the uuid
 	fs = table_search_by_str(tbl, UUID, udev_get_prop(udev, "ID_FS_UUID"));
+	if (fs)
+		return fs;
+
+	// Try to match the partuuid
+	fs = table_search_by_str(tbl, PARTUUID, udev_get_prop(udev, "ID_PART_ENTRY_UUID"));
 	if (fs)
 		return fs;
 
@@ -459,13 +473,13 @@ device_unmount (Device *dev)
 		return 0;
         }
 
-	
+
         // Unmount the device if it is actually mounted
 	if (!table_search_by_dev(g_mtab, dev)) {
                 syslog(LOG_ERR, "not found in table!");
 		return 0;
         }
-        
+
 
 	(void)spawn_callback("pre_unmount", dev);
 
@@ -513,8 +527,8 @@ device_mount (Device *dev)
 
 	if (!mp)
 		return 0;
-	
-        
+
+
         // If the mp exists, force it to unmount
         if (strcmp(mp, "/") != 0 && strcmp(mp, "/boot") != 0 && g_file_test(mp, G_FILE_TEST_EXISTS)) {
                 umount_result = umount(mp);
@@ -522,7 +536,7 @@ device_mount (Device *dev)
                         syslog(LOG_ERR, "Unmount of path %s failed with code %d", mp, umount_result);
                 }
         }
-              
+
 	if (!g_file_test(mp, G_FILE_TEST_EXISTS)) {
 		// Create the mountpoint folder only if it's not already present
 		if (mkdir(mp, 775) < 0) {
