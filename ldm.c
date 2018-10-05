@@ -172,7 +172,8 @@ enum {
 	NODE,
 	UUID,
 	LABEL,
-	PARTUUID
+	PARTUUID,
+	PARTLABEL
 };
 
 struct libmnt_fs *
@@ -192,6 +193,9 @@ table_search_by_str (struct libmnt_table *tbl, int type, char *str)
 			break;
 		case PARTUUID:
 			fs = mnt_table_find_tag(tbl, "PARTUUID", str, MNT_ITER_FORWARD);
+			break;
+		case PARTLABEL:
+			fs = mnt_table_find_tag(tbl, "PARTLABEL", str, MNT_ITER_FORWARD);
 			break;
 		case LABEL:
 			fs = mnt_table_find_tag(tbl, "LABEL", str, MNT_ITER_FORWARD);
@@ -220,6 +224,11 @@ table_search_by_dev (struct libmnt_table *tbl, Device *dev)
 
 	// Try to match the partuuid
 	fs = table_search_by_str(tbl, PARTUUID, udev_get_prop(dev->dev, "ID_PART_ENTRY_UUID"));
+	if (fs)
+		return fs;
+
+	// Try to match the partlabel
+	fs = table_search_by_str(tbl, PARTLABEL, udev_get_prop(dev->dev, "ID_PART_ENTRY_NAME"));
 	if (fs)
 		return fs;
 
@@ -252,6 +261,11 @@ table_search_by_udev (struct libmnt_table *tbl, struct udev_device *udev)
 
 	// Try to match the partuuid
 	fs = table_search_by_str(tbl, PARTUUID, udev_get_prop(udev, "ID_PART_ENTRY_UUID"));
+	if (fs)
+		return fs;
+
+	// Try to match the partlabel
+	fs = table_search_by_str(tbl, PARTLABEL, udev_get_prop(udev, "ID_PART_ENTRY_NAME"));
 	if (fs)
 		return fs;
 
