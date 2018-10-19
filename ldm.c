@@ -34,6 +34,7 @@ typedef enum {
 	MASK      = 0x04,
 	FLUSH     = 0x08,
 	RO        = 0x10,
+	SYNC      = 0x20
 } Quirk;
 
 typedef struct {
@@ -298,7 +299,7 @@ fs_get_quirks (char *fs)
 	static const FsQuirk fs_table [] = {
 		{ "msdos" , OWNER_FIX | UTF8_FLAG },
 		{ "umsdos", OWNER_FIX | UTF8_FLAG },
-		{ "vfat",   OWNER_FIX | UTF8_FLAG | MASK | FLUSH },
+		{ "vfat",   OWNER_FIX | UTF8_FLAG | MASK | FLUSH | SYNC },
 		{ "exfat",  OWNER_FIX },
 		{ "ntfs",   OWNER_FIX | UTF8_FLAG | MASK },
 		{ "iso9660",OWNER_FIX | UTF8_FLAG | RO },
@@ -579,6 +580,8 @@ device_mount (Device *dev)
 			p += sprintf(p, "flush,");
 		if (fs_quirks & MASK)
 			p += sprintf(p, "dmask=%04lo,fmask=%04lo,", g_mask.dmask, g_mask.fmask);
+		if (fs_quirks & SYNC)
+			p += sprintf(p, "sync,");
 
 		*p = '\0';
 	}
